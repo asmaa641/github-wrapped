@@ -1,4 +1,7 @@
+
 import { cookies } from "next/headers";
+import WrappedSlides from "./wrapped-slides";
+
 // Types
 
 
@@ -18,6 +21,7 @@ export type WrappedData = {
   stars: number;
   topLanguages: string[];
   personality: string;
+  personalityDescription: string;
 };
 
 
@@ -87,37 +91,33 @@ export async function fetchRepoCommitCount({
   let page = 1;
   let totalCommits = 0;
 
-  while (true) {
-    // Build the URL
-    const url = `https://api.github.com/repos/${owner}/${repo}/commits` +
-      `?author=${username}&per_page=100&page=${page}`;
+  const since = "2025-01-01T00:00:00Z";
+  const until = "2025-12-31T23:59:59Z";
 
-    // Make the request
-    const res = await fetch(url, {headers: getGitHubHeaders(token)});
+  while (page <= 5) {
+    const url =
+      `https://api.github.com/repos/${owner}/${repo}/commits` +
+      `?author=${username}` +
+      `&since=${since}` +
+      `&until=${until}` +
+      `&per_page=100&page=${page}`;
 
-  
-    // if (!res.ok) {
-    //   console.error(`Failed to fetch commits for ${repo}`);
-    //   break;
-    // }
+    const res = await fetch(url, { headers: getGitHubHeaders(token) });
 
-    // Parse response
+    if (!res.ok) break;
+
     const commits = await res.json();
 
-    //  Stop condition
-    if (commits.length === 0) {
-      break;
-    }
+    if (!Array.isArray(commits) || commits.length === 0) break;
 
-    // Accumulate
     totalCommits += commits.length;
-
-    //  Next page
     page++;
   }
 
   return totalCommits;
 }
+
+
 
 
 export async function fetchRepoLanguages(
@@ -171,60 +171,124 @@ export function getCodingPersonality(params: {
  
 }
 
+export function getCodingPersonalityDescription(params: {
+  personality: string;
+}): string {
+  const { personality } = params;
+
+  if (personality === "The Machine 🧠⚡")
+    return "Your year was defined by sheer momentum. A high volume of commits shows relentless consistency and hands-on problem solving — you’re always building, refining, and pushing forward.";
+
+  if (personality === "The Open-Source Icon 🌍")
+    return "Your repositories attracted significant attention, earning stars from the community. That recognition reflects the value and impact of the work you share openly.";
+
+  if (personality === "The Architect 🏗️")
+    return "TypeScript being your top language points to a focus on structure, scalability, and thoughtful design. You enjoy shaping systems that are clean, maintainable, and built to last.";
+
+  if (personality === "The Problem Solver 🐍")
+    return "With Python as your most-used language, your work leans toward problem solving, automation, and clarity. You favor elegant solutions that get straight to the point.";
+
+  if (personality === "The Systems Engineer ⚙️")
+    return "C++ standing out as your top language highlights a preference for performance, control, and low-level understanding. You’re comfortable working close to the system’s core.";
+
+  if (personality === "The Builder 🛠️")
+    return "JavaScript dominating your activity shows a strong focus on building interactive and functional products. You turn ideas into working experiences, one feature at a time.";
+
+  return "Your activity shows curiosity and versatility. You explore different tools and approaches, adapting your style as you learn and grow as a developer.";
+}
+
+
+  
+
+
 
 // Builder (Main Entry)
+async function fetchYearlyCommitCount(
+  token: string,
+  year: number
+): Promise<number> {
+  const query = `
+    query ($from: DateTime!, $to: DateTime!) {
+      viewer {
+        contributionsCollection(from: $from, to: $to) {
+          totalCommitContributions
+        }
+      }
+    }
+  `;
+
+  const variables = {
+    from: `${year}-01-01T00:00:00Z`,
+    to: `${year}-12-31T23:59:59Z`,
+  };
+
+  const res = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/vnd.github+json",
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch GraphQL commit count");
+  }
+
+  const json = await res.json();
+  return (
+    json?.data?.viewer?.contributionsCollection
+      ?.totalCommitContributions ?? 0
+  );
+}
+
 
 
 export async function buildWrappedData(
   token: string
 ): Promise<WrappedData> {
-  const userResponse = await fetch("https://api.github.com/user", {headers: getGitHubHeaders(token)});
-  const user = await userResponse.json();
   const { username } = await fetchGitHubUser(token);
 
-  const reposResponse = await fetch("https://api.github.com/user/repos", {headers: getGitHubHeaders(token)});
+  // ⭐ Accurate yearly commits (matches GitHub)
+  const commits = await fetchYearlyCommitCount(token, 2025);
+
   const repos = await fetchRepositories(token);
 
-  let totalCommits = 0;
-  for (const repo of repos) {
-    totalCommits += await fetchRepoCommitCount({
-      owner: repo.owner.login,
-      repo: repo.name,
-      token,
-      username
-    });
-  }
-const languageMaps = await Promise.all(
-  repos.map((repo: any) =>
-    fetchRepoLanguages(repo.owner.login, repo.name, token)
-  )
-);
+  const languageMaps = await Promise.all(
+    repos.map((repo) =>
+      fetchRepoLanguages(repo.owner.login, repo.name, token)
+    )
+  );
+
   const aggregatedLanguages = aggregateLanguages(languageMaps);
   const topLanguages = aggregatedLanguages
     .slice(0, 3)
     .map(([lang]) => lang);
 
-  
   const stars = repos.reduce(
-    (sum: number, r: any) => sum + r.stargazers_count,
+    (sum, r) => sum + r.stargazers_count,
     0
   );
 
-
   const personality = getCodingPersonality({
-    commits: totalCommits,
+    commits,
     stars,
     topLanguage: topLanguages[0] ?? "Unknown",
   });
 
-  
+  const personalityDescription = getCodingPersonalityDescription({personality});
+
   return {
     username,
-    commits: totalCommits,
+    commits,
     stars,
     topLanguages,
     personality,
+    personalityDescription
   };
+}
+
   
   // 1. fetch user
   // 2. fetch repositories
@@ -234,7 +298,7 @@ const languageMaps = await Promise.all(
   // 6. count stars
   // 7. compute personality
   // 8. return WrappedData
-}
+
 
 export default async function WrappedPage() {
   const token = (await cookies()).get("github_token")?.value;
@@ -243,22 +307,5 @@ export default async function WrappedPage() {
 
   const data = await buildWrappedData(token);
 
-  return (
-  <main style={{ padding: "40px", fontFamily: "sans-serif" }}>
-    <h1>GitHub Wrapped 🎁</h1>
-
-    <p><strong>User:</strong> {data.username}</p>
-    <p><strong>Total commits:</strong> {data.commits}</p>
-    <p><strong>Total stars:</strong> {data.stars}</p>
-
-    <p><strong>Top languages:</strong></p>
-    <ul>
-      {data.topLanguages.map(lang => (
-        <li key={lang}>{lang}</li>
-      ))}
-    </ul>
-
-    <p><strong>Personality:</strong> {data.personality}</p>
-  </main>
-);
+  return <WrappedSlides data={data} />;
 }

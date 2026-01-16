@@ -1,58 +1,93 @@
 import Image from "next/image";
-import { redirect } from "next/navigation";
-
-// export default function WrappedPage(){
-//   redirect("/api/auth/login");
-// }
 
 export default function Home() {
-  
-  
   return (
-    <div className="flex min-h-screen items-center justify-center bg-blue-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        {/* <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        /> */}
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-blue dark:text-blue-50">
-            Welcome to GitHub Wrapped!
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Log in with your GitHub account to get started
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="/api/auth/login"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="invert"
-              src="/GITHUB-LOGO1.svg"
-              alt="git logo"
-              width={16}
-              height={16}
-            />
-            Log in
-          </a>
-          {/* <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a> */}
-        </div>
-      </main>
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#0d1117",
+        color: "#e6edf3",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <section
+        style={{
+          width: "100%",
+          maxWidth: "900px",
+          padding: "40px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          gap: "32px",
+        }}
+      >
+        {/* Title (same as SlideLayout title style) */}
+        <h2
+          style={{
+            color: "#8b949e",
+            fontSize: "18px",
+            fontWeight: 500,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+          }}
+        >
+          2025 GitHub Wrapped
+        </h2>
+
+        {/* Main heading */}
+        <h1
+          style={{
+            fontSize: "48px",
+            fontWeight: 800,
+            lineHeight: 1.1,
+          }}
+        >
+          Your coding year,
+          <br />
+          visualized.
+        </h1>
+
+        {/* Subtitle */}
+        <p
+          style={{
+            fontSize: "20px",
+            color: "#8b949e",
+            maxWidth: "520px",
+          }}
+        >
+          Log in with your GitHub account to generate your personalized Wrapped.
+        </p>
+
+        {/* Login button */}
+        <a
+          href="/api/auth/login"
+          style={{
+            marginTop: "16px",
+            width: "fit-content",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "10px",
+            padding: "10px 20px",
+            borderRadius: "999px",
+            border: "1px solid #30363d",
+            backgroundColor: "#161b22",
+            color: "#e6edf3",
+            fontWeight: 500,
+            textDecoration: "none",
+          }}
+        >
+          <Image
+            src="/GITHUB-LOGO1.svg"
+            alt="GitHub logo"
+            width={32}
+            height={32}
+            style={{ filter: "invert(1)" }}
+          />
+          Log in with GitHub
+        </a>
+      </section>
     </div>
   );
 }

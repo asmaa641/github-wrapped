@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 
 export async function GET(req: Request) {
+  console.log("🔥 CALLBACK HIT:", req.url);
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
 

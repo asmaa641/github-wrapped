@@ -2,12 +2,23 @@
 
 import { motion } from "framer-motion";
 import SlideLayout from "../components/SlideLayout";
-import AnimatedNumber from "../components/AnimatedNumber";
 import { container, fadeUp, bigReveal } from "../components/reveal";
 
-export default function StarsSlide({ stars }: { stars: number }) {
+export default function ActivitySlide({
+  mostActiveDay,
+  mostActiveDayCount,
+}: {
+  mostActiveDay: string;
+  mostActiveDayCount: number;
+}) {
+  const day = new Date(mostActiveDay).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
-    <SlideLayout title="Community impact">
+    <SlideLayout title="Your peak moment">
       <motion.div
         variants={container}
         initial="hidden"
@@ -15,15 +26,19 @@ export default function StarsSlide({ stars }: { stars: number }) {
         style={{ display: "flex", flexDirection: "column", gap: 20 }}
       >
         <motion.p variants={fadeUp} style={tease}>
-          Your work didn’t go unnoticed.
+          There was one day…
         </motion.p>
 
-        <motion.div variants={bigReveal} style={bigNumber}>
-          <AnimatedNumber value={stars} />
+        <motion.p variants={fadeUp} style={tease}>
+          …where everything clicked.
+        </motion.p>
+
+        <motion.div variants={bigReveal} style={bigText}>
+          {day}
         </motion.div>
 
         <motion.p variants={fadeUp} style={caption}>
-          Stars earned across your repositories
+          {mostActiveDayCount} contributions in one day
         </motion.p>
       </motion.div>
     </SlideLayout>
@@ -35,10 +50,9 @@ const tease: React.CSSProperties = {
   color: "#8b949e",
 };
 
-const bigNumber: React.CSSProperties = {
-  fontSize: 96,
-  fontWeight: 900,
-  color: "#f78166",
+const bigText: React.CSSProperties = {
+  fontSize: 36,
+  fontWeight: 800,
 };
 
 const caption: React.CSSProperties = {

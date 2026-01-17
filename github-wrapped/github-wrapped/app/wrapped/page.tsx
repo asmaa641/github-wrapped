@@ -22,7 +22,11 @@ export type WrappedData = {
   topLanguages: string[];
   personality: string;
   personalityDescription: string;
+  mostActiveDay: string;
+  mostActiveDayCount: number;
+  mostActiveMonth: string;
 };
+
 
 
 // Helpers
@@ -243,6 +247,77 @@ async function fetchYearlyCommitCount(
   );
 }
 
+type ActivitySummary = {
+  mostActiveDay: string;
+  mostActiveDayCount: number;
+  mostActiveMonth: string;
+};
+
+async function fetchActivitySummary(
+  token: string,
+  year: number
+): Promise<ActivitySummary> {
+  const query = `
+    query ($from: DateTime!, $to: DateTime!) {
+      viewer {
+        contributionsCollection(from: $from, to: $to) {
+          contributionCalendar {
+            weeks {
+              contributionDays {
+                date
+                contributionCount
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const variables = {
+    from: `${year}-01-01T00:00:00Z`,
+    to: `${year}-12-31T23:59:59Z`,
+  };
+
+  const res = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+
+  const json = await res.json();
+
+  const days =
+    json.data.viewer.contributionsCollection.contributionCalendar.weeks
+      .flatMap((w: any) => w.contributionDays);
+
+  // Most active day
+  const mostActiveDay = days.reduce((max: any, d: any) =>
+    d.contributionCount > max.contributionCount ? d : max
+  );
+
+  // Group by month
+  const byMonth: Record<string, number> = {};
+  for (const d of days) {
+    const month = d.date.slice(0, 7); // YYYY-MM
+    byMonth[month] = (byMonth[month] || 0) + d.contributionCount;
+  }
+
+  const mostActiveMonth = Object.entries(byMonth).reduce((a, b) =>
+    b[1] > a[1] ? b : a
+  );
+
+  return {
+    mostActiveDay: mostActiveDay.date,
+    mostActiveDayCount: mostActiveDay.contributionCount,
+    mostActiveMonth: mostActiveMonth[0],
+  };
+}
+
+
 
 
 export async function buildWrappedData(
@@ -279,14 +354,19 @@ export async function buildWrappedData(
 
   const personalityDescription = getCodingPersonalityDescription({personality});
 
-  return {
-    username,
-    commits,
-    stars,
-    topLanguages,
-    personality,
-    personalityDescription
-  };
+ const activity = await fetchActivitySummary(token, 2025);
+
+return {
+  username,
+  commits,
+  stars,
+  topLanguages,
+  personality,
+  personalityDescription,
+  mostActiveDay: activity.mostActiveDay,
+  mostActiveDayCount: activity.mostActiveDayCount,
+  mostActiveMonth: activity.mostActiveMonth,
+};
 }
 
   
